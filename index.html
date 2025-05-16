@@ -2,18 +2,80 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Chat Live</title>
+  <title>Chat Mov & Portocaliu</title>
   <style>
-    body { font-family: sans-serif; background: #f0f0f0; padding: 20px; }
-    #chat { max-height: 400px; overflow-y: scroll; border: 1px solid #ccc; background: white; padding: 10px; margin-bottom: 10px; }
-    .msg { margin-bottom: 10px; }
-    input, button { padding: 10px; margin-top: 5px; width: 100%; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #2a003f;
+      color: #ffffff;
+      padding: 20px;
+    }
+
+    #chat {
+      max-height: 400px;
+      overflow-y: scroll;
+      border: 2px solid #ff9900;
+      background: #3e0d5f;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+    }
+
+    .msg {
+      margin-bottom: 10px;
+      background: #6a1b9a;
+      padding: 8px;
+      border-radius: 6px;
+      color: white;
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    input, button {
+      padding: 12px;
+      margin-top: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+    }
+
+    #name {
+      background: #ffffff;
+      color: #000000;
+    }
+
+    #msg {
+      background: #f8d6ff;
+      color: #000000;
+    }
+
+    button {
+      background: #ff9900;
+      color: #ffffff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ffaa33;
+    }
   </style>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onValue, remove } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-database.js";
 
-    // 🔐 Configul tău Firebase actualizat:
     const firebaseConfig = {
       apiKey: "AIzaSyCW-r-5oUxPTLgrf4fRo54AZhtWldAjfOI",
       authDomain: "chat-de-test-fd387.firebaseapp.com",
@@ -27,7 +89,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
     const messagesRef = ref(db, "messages");
-
     const chatBox = document.getElementById("chat");
 
     onChildAdded(messagesRef, (data) => {
@@ -43,18 +104,40 @@
       const name = document.getElementById("name").value.trim();
       const text = document.getElementById("msg").value.trim();
       if (name && text) {
-        push(messagesRef, { name, text });
+        const timestamp = Date.now();
+        push(messagesRef, { name, text, timestamp });
         document.getElementById("msg").value = "";
       }
     }
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        send();
+      }
+    });
+
+    function autoDeleteOldMessages() {
+      onValue(messagesRef, (snapshot) => {
+        const now = Date.now();
+        snapshot.forEach((child) => {
+          const msg = child.val();
+          if (msg.timestamp && now - msg.timestamp > 1800000) {
+            remove(ref(db, "messages/" + child.key));
+          }
+        });
+      });
+    }
+
+    setInterval(autoDeleteOldMessages, 60000);
   </script>
 </head>
+
 <body>
 
-  <h2>💬 Chat Live</h2>
+  <h2>🟣 Chat Mov & Portocaliu 🟠</h2>
   <div id="chat"></div>
   <input id="name" placeholder="Numele tău">
-  <input id="msg" placeholder="Scrie un mesaj...">
+  <input id="msg" placeholder="Scrie un mesaj și apasă Enter...">
   <button onclick="send()">Trimite</button>
 
 </body>
