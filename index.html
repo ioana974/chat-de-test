@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Chat Mov & Portocaliu</title>
+  <title>Chat cu Răspunsuri</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -13,7 +13,7 @@
 
     #chat {
       max-height: 400px;
-      overflow-y: scroll;
+      overflow-y: auto;
       border: 2px solid #ff9900;
       background: #3e0d5f;
       padding: 10px;
@@ -23,20 +23,40 @@
 
     .msg {
       margin-bottom: 10px;
-      background: #6a1b9a;
       padding: 8px;
       border-radius: 6px;
       color: white;
+      cursor: pointer;
       opacity: 0;
       transform: translateY(20px);
       animation: fadeInUp 0.5s ease forwards;
     }
 
-    @keyframes fadeInUp {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .own {
+      background: #9c27b0; /* mov */
+    }
+
+    .other {
+      background: #ff9800; /* portocaliu */
+    }
+
+    .reply-ref {
+      font-size: 0.85em;
+      color: #ccc;
+      margin-bottom: 4px;
+    }
+
+    #replyBox {
+      background: #222;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      display: none;
+    }
+
+    #replyBox span {
+      font-style: italic;
+      color: #ff9900;
     }
 
     input, button {
@@ -50,25 +70,13 @@
       font-size: 16px;
     }
 
-    #name {
-      background: #ffffff;
-      color: #000000;
-    }
+    #name { background: #fff; color: #000; }
+    #msg { background: #f8d6ff; color: #000; }
+    button { background: #ff9900; color: #fff; font-weight: bold; cursor: pointer; }
+    button:hover { background: #ffaa33; }
 
-    #msg {
-      background: #f8d6ff;
-      color: #000000;
-    }
-
-    button {
-      background: #ff9900;
-      color: #ffffff;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #ffaa33;
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
 
@@ -91,11 +99,26 @@
     const messagesRef = ref(db, "messages");
     const chatBox = document.getElementById("chat");
 
+    let replyTo = null;
+
     onChildAdded(messagesRef, (data) => {
       const msg = data.val();
       const div = document.createElement("div");
       div.className = "msg";
-      div.textContent = `${msg.name}: ${msg.text}`;
+
+      const userName = document.getElementById("name").value.trim();
+      div.classList.add(msg.name === userName ? "own" : "other");
+
+      let text = '';
+      if (msg.reply) {
+        const ref = document.createElement("div");
+        ref.className = "reply-ref";
+        ref.textContent = `↪ ${msg.reply}`;
+        div.appendChild(ref);
+      }
+
+      div.appendChild(document.createTextNode(`${msg.name}: ${msg.text}`));
+      div.onclick = () => setReply(msg.name, msg.text);
       chatBox.appendChild(div);
       chatBox.scrollTop = chatBox.scrollHeight;
     });
@@ -105,15 +128,32 @@
       const text = document.getElementById("msg").value.trim();
       if (name && text) {
         const timestamp = Date.now();
-        push(messagesRef, { name, text, timestamp });
+        const newMsg = { name, text, timestamp };
+        if (replyTo) {
+          newMsg.reply = replyTo;
+          clearReply();
+        }
+        push(messagesRef, newMsg);
         document.getElementById("msg").value = "";
       }
     }
 
+    function setReply(name, text) {
+      replyTo = `${name}: ${text}`;
+      const replyBox = document.getElementById("replyBox");
+      replyBox.innerHTML = `Răspunzi la: <span>${replyTo}</span> <button onclick="clearReply()">✖</button>`;
+      replyBox.style.display = "block";
+    }
+
+    window.clearReply = function () {
+      replyTo = null;
+      const replyBox = document.getElementById("replyBox");
+      replyBox.innerHTML = "";
+      replyBox.style.display = "none";
+    }
+
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        send();
-      }
+      if (e.key === "Enter") send();
     });
 
     function autoDeleteOldMessages() {
@@ -134,8 +174,11 @@
 
 <body>
 
-  <h2>🟣 Chat Mov & Portocaliu 🟠</h2>
+  <h2>🟣 Chat Mov & Portocaliu cu Răspunsuri 🟠</h2>
   <div id="chat"></div>
+
+  <div id="replyBox"></div>
+
   <input id="name" placeholder="Numele tău">
   <input id="msg" placeholder="Scrie un mesaj și apasă Enter...">
   <button onclick="send()">Trimite</button>
